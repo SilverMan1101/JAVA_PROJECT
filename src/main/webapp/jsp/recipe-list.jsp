@@ -34,14 +34,15 @@
     </div>
 
     <!-- Recipe Grid -->
-    <c:if test="${empty recipes}">
-        <div class="empty-state">
-            <p>No recipes found. <a href="${pageContext.request.contextPath}/recipes?action=form">Create one now!</a></p>
-        </div>
-    </c:if>
-
-    <div class="recipe-grid">
-        <c:forEach var="recipe" items="${recipes}">
+    <c:choose>
+        <c:when test="${empty recipes}">
+            <div class="empty-state">
+                <p>No recipes found. <a href="${pageContext.request.contextPath}/recipes?action=form">Create one now!</a></p>
+            </div>
+        </c:when>
+        <c:otherwise>
+            <div class="recipe-grid">
+                <c:forEach var="recipe" items="${recipes}">
             <div class="recipe-card">
                 <c:if test="${not empty recipe.photoPath}">
                     <img src="${pageContext.request.contextPath}/${recipe.photoPath}" 
@@ -72,8 +73,10 @@
                     </div>
                 </div>
             </div>
-        </c:forEach>
-    </div>
+                </c:forEach>
+            </div>
+        </c:otherwise>
+    </c:choose>
 </div>
 
 <%@ include file="footer.jsp" %>

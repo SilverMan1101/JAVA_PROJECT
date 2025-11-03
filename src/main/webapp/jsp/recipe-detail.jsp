@@ -111,21 +111,7 @@
         <c:if test="${not empty user}">
             <div class="recipe-section">
                 <h2>Rate & Review</h2>
-                <div class="rating-section">
-                    <form method="post" action="${pageContext.request.contextPath}/recipes" class="rating-form">
-                        <input type="hidden" name="action" value="rate">
-                        <input type="hidden" name="recipeId" value="${recipe.id}">
-                        <label>Rating:</label>
-                        <select name="rating" required>
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Very Good</option>
-                            <option value="3">3 - Good</option>
-                            <option value="2">2 - Fair</option>
-                            <option value="1">1 - Poor</option>
-                        </select>
-                        <button type="submit" class="btn btn-primary">Submit Rating</button>
-                    </form>
-                </div>
+                
 
                 <form method="post" action="${pageContext.request.contextPath}/recipes" class="review-form">
                     <input type="hidden" name="action" value="review">

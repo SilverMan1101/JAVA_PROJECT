@@ -19,7 +19,19 @@ public class RecipeDAO {
 
     public List<Recipe> getRecipesForUser(String userId) {
         return getAllRecipes().stream()
-                .filter(r -> r.isApproved() || (userId != null && userId.equals(r.getUserId())))
+                .filter(r -> {
+                    // Show approved recipes to everyone
+                    if (r.isApproved()) {
+                        return true;
+                    }
+                    // Show user's own recipes even if not approved
+                    if (userId != null && !userId.isEmpty() && 
+                        r.getUserId() != null && !r.getUserId().isEmpty() && 
+                        userId.equals(r.getUserId())) {
+                        return true;
+                    }
+                    return false;
+                })
                 .collect(Collectors.toList());
     }
 

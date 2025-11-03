@@ -89,13 +89,33 @@ public class XMLRecipeManager {
     }
 
     public static void saveRecipe(Recipe recipe) throws Exception {
+        if (recipe == null) {
+            throw new IllegalArgumentException("Recipe cannot be null");
+        }
+        if (recipe.getId() == null || recipe.getId().isEmpty()) {
+            throw new IllegalArgumentException("Recipe ID cannot be null or empty");
+        }
+        
         File file = new File(FILE_PATH);
+        File parentDir = file.getParentFile();
+        if (!parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc;
 
         if (file.exists()) {
-            doc = builder.parse(file);
+            try {
+                doc = builder.parse(file);
+            } catch (Exception e) {
+                System.err.println("Error parsing existing XML file: " + e.getMessage());
+                // Create new document if parsing fails
+                doc = builder.newDocument();
+                Element root = doc.createElement("recipes");
+                doc.appendChild(root);
+            }
         } else {
             doc = builder.newDocument();
             Element root = doc.createElement("recipes");
@@ -103,11 +123,16 @@ public class XMLRecipeManager {
         }
 
         Element root = doc.getDocumentElement();
+        if (root == null) {
+            root = doc.createElement("recipes");
+            doc.appendChild(root);
+        }
+        
         Element recipeElement = findOrCreateRecipeElement(doc, root, recipe.getId());
-
         updateRecipeElement(doc, recipeElement, recipe);
-
         saveDocument(doc, file);
+        
+        System.out.println("Recipe saved successfully: " + recipe.getId() + " to " + FILE_PATH);
     }
 
     private static Element findOrCreateRecipeElement(Document doc, Element root, String id) {
@@ -302,12 +327,31 @@ public class XMLRecipeManager {
     }
 
     private static void saveDocument(Document doc, File file) throws Exception {
+        if (doc == null) {
+            throw new IllegalArgumentException("Document cannot be null");
+        }
+        if (file == null) {
+            throw new IllegalArgumentException("File cannot be null");
+        }
+        
+        // Ensure parent directory exists
+        File parentDir = file.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
+        
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.setOutputProperty("indent", "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(new FileOutputStream(file));
-        transformer.transform(source, result);
+        
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            StreamResult result = new StreamResult(fos);
+            transformer.transform(source, result);
+        } catch (IOException e) {
+            throw new Exception("Failed to write recipe to file: " + file.getAbsolutePath(), e);
+        }
     }
 
     public static String generateId() {

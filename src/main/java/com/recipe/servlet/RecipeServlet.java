@@ -6,16 +6,23 @@ import com.recipe.model.Ingredient;
 import com.recipe.model.User;
 import com.recipe.model.Review;
 import com.recipe.util.UserManager;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RecipeServlet extends HttpServlet {
     private RecipeDAO recipeDAO = new RecipeDAO();
@@ -51,7 +58,38 @@ public class RecipeServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String action = request.getParameter("action");
+        String action = null;
+        List<FileItem> parsedItems = null;
+        
+        // For multipart requests, we need to parse the action parameter from the form data
+        // Store parsed items in request attribute so saveRecipe can reuse them
+        if (ServletFileUpload.isMultipartContent(request)) {
+            try {
+                DiskFileItemFactory factory = new DiskFileItemFactory();
+                factory.setSizeThreshold(4096);
+                factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+                
+                ServletFileUpload upload = new ServletFileUpload(factory);
+                parsedItems = upload.parseRequest(request);
+                
+                // Store parsed items so saveRecipe can reuse them (can't parse request stream twice)
+                request.setAttribute("parsedMultipartItems", parsedItems);
+                
+                for (FileItem item : parsedItems) {
+                    if (item.isFormField() && "action".equals(item.getFieldName())) {
+                        action = item.getString("UTF-8");
+                        break;
+                    }
+                }
+            } catch (FileUploadException e) {
+                e.printStackTrace();
+                System.err.println("Error parsing multipart request: " + e.getMessage());
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Error parsing form data");
+                return;
+            }
+        } else {
+            action = request.getParameter("action");
+        }
 
         if ("save".equals(action)) {
             saveRecipe(request, response);
@@ -174,7 +212,87 @@ public class RecipeServlet extends HttpServlet {
         }
 
         try {
-            String id = request.getParameter("id");
+            // Parse multipart request
+            Map<String, String> formFields = new HashMap<>();
+            Map<String, String[]> formArrays = new HashMap<>();
+            String photoPath = null;
+            
+            // Check if request was already parsed in doPost (for multipart requests)
+            @SuppressWarnings("unchecked")
+            List<FileItem> preParsedItems = (List<FileItem>) request.getAttribute("parsedMultipartItems");
+            List<FileItem> formItems = null;
+            
+            if (preParsedItems != null) {
+                // Use pre-parsed items to avoid parsing request stream twice
+                formItems = preParsedItems;
+            } else if (ServletFileUpload.isMultipartContent(request)) {
+                DiskFileItemFactory factory = new DiskFileItemFactory();
+                factory.setSizeThreshold(4096);
+                factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+                
+                ServletFileUpload upload = new ServletFileUpload(factory);
+                upload.setFileSizeMax(5 * 1024 * 1024); // 5MB
+                upload.setSizeMax(10 * 1024 * 1024); // 10MB
+                
+                try {
+                    formItems = upload.parseRequest(request);
+                } catch (FileUploadException e) {
+                    throw new ServletException("Error parsing multipart request", e);
+                }
+            }
+            
+            // Process form items (either pre-parsed or newly parsed)
+            if (formItems != null) {
+                for (FileItem item : formItems) {
+                    if (item.isFormField()) {
+                        String fieldName = item.getFieldName();
+                        String fieldValue = item.getString("UTF-8");
+                        
+                        // Handle array parameters
+                        if (fieldName.equals("ingredientName") || 
+                            fieldName.equals("ingredientQuantity") || 
+                            fieldName.equals("ingredientUnit") ||
+                            fieldName.equals("step")) {
+                            if (!formArrays.containsKey(fieldName)) {
+                                formArrays.put(fieldName, new String[]{fieldValue});
+                            } else {
+                                String[] existing = formArrays.get(fieldName);
+                                String[] newArray = Arrays.copyOf(existing, existing.length + 1);
+                                newArray[existing.length] = fieldValue;
+                                formArrays.put(fieldName, newArray);
+                            }
+                        } else {
+                            formFields.put(fieldName, fieldValue);
+                        }
+                    } else if (item.getFieldName().equals("photo") && item.getSize() > 0) {
+                        // Handle file upload
+                        String uploadDir = System.getProperty("user.dir") + File.separator + 
+                                         "src" + File.separator + "main" + File.separator + 
+                                         "webapp" + File.separator + "uploads";
+                        File uploadPath = new File(uploadDir);
+                        if (!uploadPath.exists()) {
+                            uploadPath.mkdirs();
+                        }
+                        String fileName = System.currentTimeMillis() + "_" + 
+                                         new File(item.getName()).getName();
+                        File uploadedFile = new File(uploadPath, fileName);
+                        item.write(uploadedFile);
+                        photoPath = "uploads/" + fileName;
+                    }
+                }
+            } else {
+                // Non-multipart request (fallback)
+                for (String paramName : request.getParameterMap().keySet()) {
+                    String[] values = request.getParameterValues(paramName);
+                    if (values.length == 1) {
+                        formFields.put(paramName, values[0]);
+                    } else {
+                        formArrays.put(paramName, values);
+                    }
+                }
+            }
+            
+            String id = formFields.get("id");
             Recipe recipe;
 
             if (id != null && !id.isEmpty()) {
@@ -189,21 +307,25 @@ public class RecipeServlet extends HttpServlet {
                 recipe.setCreatedAt(java.time.LocalDateTime.now().toString());
             }
 
-            recipe.setTitle(request.getParameter("title"));
-            recipe.setDescription(request.getParameter("description"));
-            recipe.setCuisineType(request.getParameter("cuisineType"));
-            recipe.setDifficultyLevel(request.getParameter("difficultyLevel"));
-            recipe.setPreparationTime(Integer.parseInt(request.getParameter("preparationTime")));
-            recipe.setCookingTime(Integer.parseInt(request.getParameter("cookingTime")));
-            recipe.setServings(Integer.parseInt(request.getParameter("servings")));
-            recipe.setCategory(request.getParameter("category"));
+            recipe.setTitle(formFields.get("title"));
+            recipe.setDescription(formFields.get("description"));
+            recipe.setCuisineType(formFields.get("cuisineType"));
+            recipe.setDifficultyLevel(formFields.get("difficultyLevel"));
+            recipe.setPreparationTime(Integer.parseInt(formFields.getOrDefault("preparationTime", "0")));
+            recipe.setCookingTime(Integer.parseInt(formFields.getOrDefault("cookingTime", "0")));
+            recipe.setServings(Integer.parseInt(formFields.getOrDefault("servings", "1")));
+            recipe.setCategory(formFields.get("category"));
             recipe.setUserId(user.getId());
             recipe.setAuthorName(user.getFullName());
+            
+            if (photoPath != null) {
+                recipe.setPhotoPath(photoPath);
+            }
 
             // Parse ingredients
-            String[] ingredientNames = request.getParameterValues("ingredientName");
-            String[] quantities = request.getParameterValues("ingredientQuantity");
-            String[] units = request.getParameterValues("ingredientUnit");
+            String[] ingredientNames = formArrays.get("ingredientName");
+            String[] quantities = formArrays.get("ingredientQuantity");
+            String[] units = formArrays.get("ingredientUnit");
 
             List<Ingredient> ingredients = new ArrayList<>();
             if (ingredientNames != null) {
@@ -221,7 +343,7 @@ public class RecipeServlet extends HttpServlet {
             recipe.setIngredients(ingredients);
 
             // Parse preparation steps
-            String[] steps = request.getParameterValues("step");
+            String[] steps = formArrays.get("step");
             List<String> preparationSteps = new ArrayList<>();
             if (steps != null) {
                 for (String step : steps) {
@@ -233,7 +355,7 @@ public class RecipeServlet extends HttpServlet {
             recipe.setPreparationSteps(preparationSteps);
 
             // Parse tags
-            String tagsStr = request.getParameter("tags");
+            String tagsStr = formFields.get("tags");
             List<String> tags = new ArrayList<>();
             if (tagsStr != null && !tagsStr.isEmpty()) {
                 tags = Arrays.asList(tagsStr.split(",\\s*"));
@@ -245,12 +367,36 @@ public class RecipeServlet extends HttpServlet {
                 recipe.setApproved(true);
             }
 
+            // Validate required fields before saving
+            if (recipe.getTitle() == null || recipe.getTitle().trim().isEmpty()) {
+                throw new IllegalArgumentException("Recipe title is required");
+            }
+            if (recipe.getCategory() == null || recipe.getCategory().trim().isEmpty()) {
+                throw new IllegalArgumentException("Recipe category is required");
+            }
+            
+            System.out.println("Attempting to save recipe: " + recipe.getId() + ", Title: " + recipe.getTitle());
             recipeDAO.saveRecipe(recipe);
-            response.sendRedirect("recipes?action=view&id=" + recipe.getId());
+            System.out.println("Recipe saved successfully: " + recipe.getId());
+            
+            // Redirect to the recipe list so user can see their newly created recipe
+            response.sendRedirect("recipes");
 
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            System.err.println("NumberFormatException while saving recipe: " + e.getMessage());
+            request.setAttribute("error", "Invalid number format in recipe fields: " + e.getMessage());
+            request.getRequestDispatcher("/jsp/recipe-form.jsp").forward(request, response);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            System.err.println("Validation error while saving recipe: " + e.getMessage());
+            request.setAttribute("error", e.getMessage());
+            request.getRequestDispatcher("/jsp/recipe-form.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Error saving recipe: " + e.getMessage());
+            System.err.println("Exception while saving recipe: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("error", "Error saving recipe: " + e.getMessage() + ". Please check server logs for details.");
             request.getRequestDispatcher("/jsp/recipe-form.jsp").forward(request, response);
         }
     }
