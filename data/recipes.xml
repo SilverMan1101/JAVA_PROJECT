@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<recipes>
+        
+  
+  
+  <recipe id="RECIPE_1762147558614_82">
+        
+    <title>rice</title>
+        
+    <description>just make it</description>
+        
+    <cuisineType>Indian</cuisineType>
+        
+    <difficultyLevel>Easy</difficultyLevel>
+        
+    <preparationTime>10</preparationTime>
+        
+    <cookingTime>20</cookingTime>
+        
+    <servings>2</servings>
+        
+    <category>Vegetarian</category>
+        
+    <photoPath/>
+        
+    <userId>USER_1762109364508</userId>
+        
+    <authorName>Aman</authorName>
+        
+    <averageRating>0.0</averageRating>
+        
+    <totalRatings>0</totalRatings>
+        
+    <approved>true</approved>
+        
+    <createdAt>2025-11-03T10:55:58.615559500</createdAt>
+        
+    <ingredients>
+            
+      <ingredient>
+                
+        <name>Rice</name>
+                
+        <quantity>200.0</quantity>
+                
+        <unit>g</unit>
+                
+        <notes/>
+              
+      </ingredient>
+            
+      <ingredient>
+                
+        <name>Water</name>
+                
+        <quantity>2.0</quantity>
+                
+        <unit>cup</unit>
+                
+        <notes/>
+              
+      </ingredient>
+          
+    </ingredients>
+        
+    <preparationSteps>
+            
+      <step>you can do it</step>
+          
+    </preparationSteps>
+        
+    <tags>
+            
+      <tag>healthy</tag>
+          
+    </tags>
+        
+    <reviews/>
+      
+  </recipe>
+      
+  
+  
+  <recipe id="RECIPE_1762147642841_183">
+            
+    
+    <title>food</title>
+            
+    
+    <description>agdi</description>
+            
+    
+    <cuisineType>Italian</cuisineType>
+            
+    
+    <difficultyLevel>Easy</difficultyLevel>
+            
+    
+    <preparationTime>23</preparationTime>
+            
+    
+    <cookingTime>21</cookingTime>
+            
+    
+    <servings>1</servings>
+            
+    
+    <category>Vegetarian</category>
+            
+    
+    <photoPath/>
+            
+    
+    <userId>USER_1762147597719</userId>
+            
+    
+    <authorName>Silver</authorName>
+            
+    
+    <averageRating>0.0</averageRating>
+            
+    
+    <totalRatings>0</totalRatings>
+            
+    
+    <approved>false</approved>
+            
+    
+    <createdAt>2025-11-03T10:57:22.841541900</createdAt>
+            
+    
+    <ingredients>
+                  
+      
+      <ingredient>
+                        
+        
+        <name>kahd</name>
+                        
+        
+        <quantity>4.0</quantity>
+                        
+        
+        <unit>cup</unit>
+                      
+      
+      </ingredient>
+                
+    
+    </ingredients>
+            
+    
+    <preparationSteps>
+                  
+      
+      <step>skugfuysg</step>
+                
+    
+    </preparationSteps>
+            
+    
+    <tags>
+                  
+      
+      <tag>ss</tag>
+                
+    
+    </tags>
+            
+    
+    <reviews/>
+          
+  
+  </recipe>
+    
+
+  <recipe id="RECIPE_1762149283387_575">
+    <title>kjfd</title>
+    <description>ksfnj</description>
+    <cuisineType>Italian</cuisineType>
+    <difficultyLevel>Easy</difficultyLevel>
+    <preparationTime>38</preparationTime>
+    <cookingTime>39</cookingTime>
+    <servings>4</servings>
+    <category>Vegetarian</category>
+    <photoPath/>
+    <userId>ADMIN_1</userId>
+    <authorName>Administrator</authorName>
+    <averageRating>0.0</averageRating>
+    <totalRatings>0</totalRatings>
+    <approved>true</approved>
+    <createdAt>2025-11-03T11:24:43.393143100</createdAt>
+    <ingredients>
+      <ingredient>
+        <name>lsknj</name>
+        <quantity>34.0</quantity>
+        <unit>tsp</unit>
+      </ingredient>
+    </ingredients>
+    <preparationSteps>
+      <step>sfhj</step>
+    </preparationSteps>
+    <tags>
+      <tag>djkb</tag>
+    </tags>
+    <reviews/>
+  </recipe>
+</recipes>
